@@ -10,11 +10,11 @@ typedef struct TreeNode {
     struct TreeNode *right;
 } TreeNode;
 
-// Function to create a new tree node
+// Creates a new tree node
 TreeNode* createNode(int val) {
     TreeNode* newNode = (TreeNode*)malloc(sizeof(TreeNode));
     if (!newNode) {
-        perror("Unable to allocate memory for new node");
+        perror("Memory allocation failed for tree node");
         exit(EXIT_FAILURE);
     }
     newNode->val = val;
@@ -23,8 +23,7 @@ TreeNode* createNode(int val) {
     return newNode;
 }
 
-// --- Queue Implementation for Level Order Traversal ---
-// Note: A simple array-based queue for storing TreeNode pointers.
+// --- Queue Implementation ---
 #define MAX_QUEUE_SIZE 100
 
 typedef struct Queue {
@@ -33,11 +32,11 @@ typedef struct Queue {
     int rear;
 } Queue;
 
-// Function to create a new queue
+// Creates and initializes a new queue
 Queue* createQueue() {
     Queue* q = (Queue*)malloc(sizeof(Queue));
     if (!q) {
-        perror("Unable to allocate memory for queue");
+        perror("Memory allocation failed for queue");
         exit(EXIT_FAILURE);
     }
     q->front = -1;
@@ -45,16 +44,15 @@ Queue* createQueue() {
     return q;
 }
 
-// Check if the queue is empty
+// Checks if the queue is empty
 bool isEmpty(Queue* q) {
-    // Check if front has surpassed rear or if it's uninitialized
     return q->front == -1 || q->front > q->rear;
 }
 
-// Add an item to the queue
+// Adds a node to the queue
 void enqueue(Queue* q, TreeNode* node) {
     if (q->rear == MAX_QUEUE_SIZE - 1) {
-        printf("Queue is full!\n");
+        printf("Queue is full, cannot enqueue!\n");
         return;
     }
     if (q->front == -1) {
@@ -64,27 +62,26 @@ void enqueue(Queue* q, TreeNode* node) {
     q->items[q->rear] = node;
 }
 
-// Remove an item from the queue
+// Removes and returns a node from the queue
 TreeNode* dequeue(Queue* q) {
     if (isEmpty(q)) {
-        printf("Queue is empty!\n");
+        printf("Queue is empty, cannot dequeue!\n");
         return NULL;
     }
     TreeNode* item = q->items[q->front];
     q->front++;
-    // No need to reset here, isEmpty handles the logic
     return item;
 }
 
-// Get the current size of the queue
+// Gets the current number of items in the queue
 int queueSize(Queue* q) {
     if (isEmpty(q)) return 0;
     return q->rear - q->front + 1;
 }
 
-// --- Zigzag Traversal Implementation ---
+// --- Zigzag Traversal ---
 
-// Helper function to reverse an array
+// Reverses an array of integers
 void reverseArray(int* arr, int size) {
     int start = 0;
     int end = size - 1;
@@ -97,9 +94,10 @@ void reverseArray(int* arr, int size) {
     }
 }
 
+// Performs zigzag level order traversal and prints the result
 void zigzagLevelOrder(TreeNode* root) {
     if (root == NULL) {
-        printf("Tree is empty. Nothing to traverse.\n");
+        printf("Tree is empty.\n");
         return;
     }
 
@@ -107,13 +105,18 @@ void zigzagLevelOrder(TreeNode* root) {
     enqueue(queue, root);
     bool leftToRight = true;
 
-    printf("[\n");
+    printf("[\n"); // Start of overall output
     while (!isEmpty(queue)) {
         int levelSize = queueSize(queue);
         int* currentLevel = (int*)malloc(levelSize * sizeof(int));
         if (!currentLevel) {
-            perror("Failed to allocate memory for level array");
-            return;
+            perror("Memory allocation failed for level array");
+            // Clean up queue before exiting or returning
+            while(!isEmpty(queue)) {
+                dequeue(queue);
+            }
+            free(queue);
+            exit(EXIT_FAILURE);
         }
 
         for (int i = 0; i < levelSize; i++) {
@@ -128,23 +131,23 @@ void zigzagLevelOrder(TreeNode* root) {
             reverseArray(currentLevel, levelSize);
         }
 
-        printf("  [");
+        printf("  ["); // Start of current level output
         for (int i = 0; i < levelSize; i++) {
             printf("%d", currentLevel[i]);
             if (i < levelSize - 1) printf(", ");
         }
-        printf("]\n");
+        printf("]\n"); // End of current level output
 
         leftToRight = !leftToRight;
-        free(currentLevel);
+        free(currentLevel); // Free memory for current level array
     }
-    printf("]\n");
-    free(queue);
+    printf("]\n"); // End of overall output
+    free(queue); // Free the queue structure itself
 }
 
-// --- Interactive Tree Building and Cleanup ---
+// --- Tree Building and Cleanup ---
 
-// Function to free all nodes in a tree to prevent memory leaks
+// Frees all nodes in the tree recursively
 void freeTree(TreeNode* root) {
     if (root == NULL) {
         return;
@@ -154,12 +157,12 @@ void freeTree(TreeNode* root) {
     free(root);
 }
 
-// Function to build a tree interactively from user input
+// Builds a binary tree interactively from user input
 TreeNode* buildTreeInteractive() {
     char valStr[10];
-    printf("\n--- Build Your Binary Tree ---\n");
-    printf("Enter node values level by level. Use 'N' or 'n' for null nodes.\n");
-    printf("Enter the root value: ");
+    printf("\n--- Build Binary Tree ---\n");
+    printf("Enter node values level by level. Use 'N' for null.\n");
+    printf("Root value: ");
     scanf("%s", valStr);
 
     if (strcmp(valStr, "N") == 0 || strcmp(valStr, "n") == 0) {
@@ -173,26 +176,23 @@ TreeNode* buildTreeInteractive() {
     while (!isEmpty(q)) {
         TreeNode* current = dequeue(q);
 
-        // Prompt for left child
-        printf("Enter left child for %d (or 'N' for null): ", current->val);
+        printf("Left child of %d (or 'N'): ", current->val);
         scanf("%s", valStr);
         if (strcmp(valStr, "N") != 0 && strcmp(valStr, "n") != 0) {
             current->left = createNode(atoi(valStr));
             enqueue(q, current->left);
         }
 
-        // Prompt for right child
-        printf("Enter right child for %d (or 'N' for null): ", current->val);
+        printf("Right child of %d (or 'N'): ", current->val);
         scanf("%s", valStr);
         if (strcmp(valStr, "N") != 0 && strcmp(valStr, "n") != 0) {
             current->right = createNode(atoi(valStr));
             enqueue(q, current->right);
         }
     }
-    free(q);
+    free(q); // Free the queue structure
     return root;
 }
-
 
 // --- Main Function ---
 int main() {
@@ -200,18 +200,17 @@ int main() {
     do {
         TreeNode* root = buildTreeInteractive();
 
-        printf("\n--- Traversal Result ---\n");
+        printf("\n--- Zigzag Traversal Result ---\n");
         zigzagLevelOrder(root);
 
         // Clean up the dynamically allocated tree
         freeTree(root);
 
-        printf("\nDo you want to build another tree? (y/n): ");
-        // Note: The space before %c is important to consume any leftover newline/whitespace
-        scanf(" %c", &choice);
+        printf("\nBuild another tree? (y/n): ");
+        scanf(" %c", &choice); // Space before %c to consume newline
 
     } while (choice == 'y' || choice == 'Y');
 
-    printf("Exiting program.\n");
+    printf("Exiting.\n");
     return 0;
 }
