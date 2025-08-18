@@ -1,59 +1,58 @@
 #include <stdio.h>
-#include <string.h>
-#include <ctype.h> // For isdigit() and isalpha()
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
-#define MAX_STACK_SIZE 100
+#define MAX_SIZE 100
 
-// Global stack and top variable
-int stack[MAX_STACK_SIZE];
-int top = -1;
+// Stack structure
+struct Stack {
+    int top;
+    int items[MAX_SIZE];
+};
 
-// --- Stack Operations ---
+// Initializes a stack
+void initialize(struct Stack *s) {
+    s->top = -1;
+}
 
-// Pushes an item onto the stack
-void push(int item) {
-    if (top >= MAX_STACK_SIZE - 1) {
+// Pushes a value onto the stack
+void push(struct Stack *s, int value) {
+    if (s->top >= MAX_SIZE - 1) {
         printf("Error: Stack Overflow.\n");
         exit(1);
     }
-    stack[++top] = item;
+    s->items[++(s->top)] = value;
 }
 
-// Pops an item from the stack
-int pop() {
-    if (top < 0) {
-        printf("Error: Stack Underflow (invalid expression).\n");
+// Pops a value from the stack
+int pop(struct Stack *s) {
+    if (s->top < 0) {
+        printf("Error: Invalid Postfix Expression (Stack Underflow).\n");
         exit(1);
     }
-    return stack[top--];
+    return s->items[(s->top)--];
 }
 
-// --- Postfix Evaluation Logic ---
-
-// Function to evaluate a given postfix expression with variables
+// Evaluates a postfix expression
 void evaluatePostfix(char* postfix) {
+    struct Stack s;
+    initialize(&s);
     int i = 0;
-    char symbol;
     int operand1, operand2, result, value;
 
-    // Iterate through the postfix expression string
-    while ((symbol = postfix[i++]) != '\0') {
-        
-        // If the symbol is a digit (operand)
+    while (postfix[i] != '\0') {
+        char symbol = postfix[i];
+
         if (isdigit(symbol)) {
-            push(symbol - '0');
-        }
-        // If the symbol is an alphabet character (variable)
-        else if (isalpha(symbol)) {
-            printf("Enter value for variable %c: ", symbol);
+            push(&s, symbol - '0');
+        } else if (isalpha(symbol)) {
+            printf("Enter value for variable '%c': ", symbol);
             scanf("%d", &value);
-            push(value);
-        }
-        // If the symbol is an operator
-        else if (symbol == '+' || symbol == '-' || symbol == '*' || symbol == '/') {
-            operand2 = pop();
-            operand1 = pop();
+            push(&s, value);
+        } else if (symbol == '+' || symbol == '-' || symbol == '*' || symbol == '/') {
+            operand2 = pop(&s);
+            operand1 = pop(&s);
 
             switch (symbol) {
                 case '+': result = operand1 + operand2; break;
@@ -67,28 +66,22 @@ void evaluatePostfix(char* postfix) {
                     result = operand1 / operand2;
                     break;
             }
-            push(result);
+            push(&s, result);
         }
+        i++;
     }
 
-    result = pop();
-    
-    if (top != -1) {
-        printf("Error: Invalid Postfix Expression.\n");
+    if (s.top != 0) {
+        printf("Error: Invalid Postfix Expression (Stack not empty).\n");
     } else {
-        printf("✅ Result of Postfix Evaluation: %d\n", result);
+        printf("✅ Result of Postfix Evaluation: %d\n", s.items[s.top]);
     }
 }
 
-// --- Main Function ---
-
 int main() {
-    char postfix[MAX_STACK_SIZE];
-
-    printf("⚙️ Enter a postfix expression with digits and variables (e.g., ab+c*): ");
+    char postfix[MAX_SIZE];
+    printf("⚙️ Enter a postfix expression with digits and variables (e.g., ab+c*):\n> ");
     scanf("%s", postfix);
-
     evaluatePostfix(postfix);
-
     return 0;
 }

@@ -1,44 +1,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h> // For isalnum
+#include <ctype.h>
 
-#define MAX_SIZE 100 // Maximum size for expression and stack
+#define MAX_SIZE 100
 
-// --- Stack Implementation ---
+// Stack structure
 typedef struct {
     char items[MAX_SIZE];
     int top;
 } Stack;
 
+// Initializes stack
 void initialize(Stack *s) {
     s->top = -1;
 }
 
+// Checks if stack is empty
 int isEmpty(Stack *s) {
     return s->top == -1;
 }
 
-int isFull(Stack *s) {
-    return s->top == MAX_SIZE - 1;
-}
-
+// Pushes an item
 void push(Stack *s, char value) {
-    if (isFull(s)) {
+    if (s->top >= MAX_SIZE - 1) {
         printf("Stack Overflow!\n");
-        return;
+        exit(1);
     }
     s->items[++s->top] = value;
 }
 
+// Pops an item
 char pop(Stack *s) {
     if (isEmpty(s)) {
-        printf("Stack Underflow!\n");
-        return '\0'; // Return null character to indicate error
+        return '\0'; // Return null char on underflow
     }
     return s->items[s->top--];
 }
 
+// Peeks at the top item
 char peek(Stack *s) {
     if (isEmpty(s)) {
         return '\0';
@@ -46,50 +46,37 @@ char peek(Stack *s) {
     return s->items[s->top];
 }
 
-// --- Helper Functions ---
-
-// Function to check if a character is an operator
-int isOperator(char ch) {
-    return (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^');
-}
-
-// Function to get the precedence of an operator
+// Gets operator precedence
 int precedence(char op) {
     switch (op) {
         case '+':
-        case '-':
-            return 1;
+        case '-': return 1;
         case '*':
-        case '/':
-            return 2;
-        case '^':
-            return 3; // Exponentiation usually has higher precedence
-        default:
-            return 0; // Not an operator
+        case '/': return 2;
+        case '^': return 3;
     }
+    return 0;
 }
 
-// Function to reverse a string
+// Reverses a string
 void reverseString(char *str) {
     int length = strlen(str);
-    int i, j;
-    char temp;
-    for (i = 0, j = length - 1; i < j; i++, j--) {
-        temp = str[i];
+    for (int i = 0, j = length - 1; i < j; i++, j--) {
+        char temp = str[i];
         str[i] = str[j];
         str[j] = temp;
     }
 }
 
-// Function to convert infix to prefix
+// Converts infix to prefix
 void infixToPrefix(char *infix, char *prefix) {
     Stack s;
     initialize(&s);
     char reversedInfix[MAX_SIZE];
-    char tempPostfix[MAX_SIZE]; // To store the postfix of the reversed infix
+    char tempPostfix[MAX_SIZE];
     int i, j = 0;
 
-    // 1. Reverse the infix expression and swap parentheses
+    // 1. Reverse the infix and swap parentheses
     strcpy(reversedInfix, infix);
     reverseString(reversedInfix);
 
@@ -101,81 +88,56 @@ void infixToPrefix(char *infix, char *prefix) {
         }
     }
 
-    // 2. Convert the modified (reversed and parenthesis-swapped) infix to postfix
+    // 2. Convert to postfix
     for (i = 0; i < strlen(reversedInfix); i++) {
-        char currentChar = reversedInfix[i];
-
-        if (isalnum(currentChar)) { // If it's an operand (letter or digit)
-            tempPostfix[j++] = currentChar;
-        } else if (currentChar == '(') {
-            push(&s, currentChar);
-        } else if (currentChar == ')') {
+        char token = reversedInfix[i];
+        if (isalnum(token)) {
+            tempPostfix[j++] = token;
+        } else if (token == '(') {
+            push(&s, token);
+        } else if (token == ')') {
             while (!isEmpty(&s) && peek(&s) != '(') {
                 tempPostfix[j++] = pop(&s);
             }
             if (!isEmpty(&s) && peek(&s) == '(') {
-                pop(&s); // Pop the '('
-            } else {
-                // Mismatched parentheses - this case should ideally be handled at input validation
-                printf("Error: Mismatched parentheses.\n");
-                return;
+                pop(&s);
             }
-        } else if (isOperator(currentChar)) {
-            // For infix to prefix, when converting reversed infix to postfix,
-            // for operators of same precedence, we pop if stack top has higher or EQUAL precedence.
-            // This ensures right-to-left associativity for the original operators (which become left-to-right when reversed)
-            // and correctly handles the reversal.
-            while (!isEmpty(&s) && precedence(peek(&s)) > precedence(currentChar)) {
+        } else { // Operator
+            while (!isEmpty(&s) && precedence(peek(&s)) > precedence(token)) {
                 tempPostfix[j++] = pop(&s);
             }
-            push(&s, currentChar);
+            push(&s, token);
         }
     }
 
-    // Pop any remaining operators from the stack
     while (!isEmpty(&s)) {
         tempPostfix[j++] = pop(&s);
     }
-    tempPostfix[j] = '\0'; // Null-terminate the string
+    tempPostfix[j] = '\0';
 
-    // 3. Reverse the resulting postfix expression to get the prefix expression
+    // 3. Reverse the result to get prefix
     strcpy(prefix, tempPostfix);
     reverseString(prefix);
 }
 
-// --- Main Function (User Interface) ---
+// Main function
 int main() {
     char infixExpression[MAX_SIZE];
     char prefixExpression[MAX_SIZE];
 
     printf("Infix to Prefix Converter\n");
     printf("--------------------------\n");
+    printf("Enter an infix expression:\n> ");
+    fgets(infixExpression, MAX_SIZE, stdin);
+    infixExpression[strcspn(infixExpression, "\n")] = 0;
 
-    while (1) {
-        printf("\nEnter an infix expression (or 'exit' to quit): ");
-        fgets(infixExpression, MAX_SIZE, stdin);
-        infixExpression[strcspn(infixExpression, "\n")] = 0; // Remove newline character
+    infixToPrefix(infixExpression, prefixExpression);
 
-        if (strcmp(infixExpression, "exit") == 0) {
-            printf("Exiting program. Goodbye!\n");
-            break;
-        }
-
-        // Basic input validation (can be enhanced)
-        if (strlen(infixExpression) == 0) {
-            printf("Error: Expression cannot be empty.\n");
-            continue;
-        }
-
-        // Convert and display
-        infixToPrefix(infixExpression, prefixExpression);
-
-        if (strlen(prefixExpression) > 0) { // Check if conversion was successful
-            printf("Infix Expression:  %s\n", infixExpression);
-            printf("Prefix Expression: %s\n", prefixExpression);
-        } else {
-            printf("Conversion failed. Please check your expression.\n");
-        }
+    if (strlen(prefixExpression) > 0) {
+        printf("\nInfix Expression:  %s\n", infixExpression);
+        printf("Prefix Expression: %s\n", prefixExpression);
+    } else {
+        printf("Conversion failed. Please check your expression.\n");
     }
 
     return 0;

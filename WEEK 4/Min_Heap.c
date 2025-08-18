@@ -1,120 +1,97 @@
 #include <stdio.h>
-#include <stdlib.h> // Required for malloc, free (though not used in this fixed-size array example)
+#include <stdlib.h>
 
-#define MAX_SIZE 100 // Define the maximum capacity of the heap
+#define MAX_SIZE 100
 
-// Global array to store the min-heap elements
-int minHeap[MAX_SIZE];
-// Global variable to keep track of the current number of elements in the heap
-int heapSize = 0;
+// Heap structure
+typedef struct {
+    int items[MAX_SIZE];
+    int size;
+} MinHeap;
 
-// Helper function to swap two integer values.
-// This is crucial for maintaining heap properties.
+// Initializes the heap
+void initializeHeap(MinHeap* h) {
+    h->size = 0;
+}
+
+// Swaps two integers
 void swap(int *a, int *b) {
     int temp = *a;
     *a = *b;
     *b = temp;
 }
 
-// Function to maintain the min-heap property by moving an element upwards.
-// This is called after an insertion to ensure the new element is in its correct place.
-void heapifyUp(int index) {
-    // Continue as long as the current element is not the root (index > 0)
-    // and it's smaller than its parent.
-    while (index > 0 && minHeap[index] < minHeap[(index - 1) / 2]) {
-        // Swap the current element with its parent
-        swap(&minHeap[index], &minHeap[(index - 1) / 2]);
-        // Move up to the parent's index
+// Moves an element up the heap
+void heapifyUp(MinHeap* h, int index) {
+    while (index > 0 && h->items[index] < h->items[(index - 1) / 2]) {
+        swap(&h->items[index], &h->items[(index - 1) / 2]);
         index = (index - 1) / 2;
     }
 }
 
-// Function to maintain the min-heap property by moving an element downwards.
-// This is called after a deletion (specifically, replacing the root) to restore the heap.
-void heapifyDown(int index) {
-    int smallest = index; // Assume the current node is the smallest
-    int leftChild = 2 * index + 1; // Calculate index of left child
-    int rightChild = 2 * index + 2; // Calculate index of right child
+// Moves an element down the heap
+void heapifyDown(MinHeap* h, int index) {
+    int smallest = index;
+    int left = 2 * index + 1;
+    int right = 2 * index + 2;
 
-    // Check if the left child exists and is smaller than the current smallest
-    if (leftChild < heapSize && minHeap[leftChild] < minHeap[smallest]) {
-        smallest = leftChild;
+    if (left < h->size && h->items[left] < h->items[smallest]) {
+        smallest = left;
+    }
+    if (right < h->size && h->items[right] < h->items[smallest]) {
+        smallest = right;
     }
 
-    // Check if the right child exists and is smaller than the current smallest
-    if (rightChild < heapSize && minHeap[rightChild] < minHeap[smallest]) {
-        smallest = rightChild;
-    }
-
-    // If the smallest element is not the current node, swap them
-    // and recursively call heapifyDown on the swapped position.
     if (smallest != index) {
-        swap(&minHeap[index], &minHeap[smallest]);
-        heapifyDown(smallest);
+        swap(&h->items[index], &h->items[smallest]);
+        heapifyDown(h, smallest);
     }
 }
 
-// Function to insert a new element into the min-heap.
-void insertMinHeap(int value) {
-    // Check if the heap is full before inserting
-    if (heapSize >= MAX_SIZE) {
-        printf("Heap is full. Cannot insert more elements.\n");
+// Inserts an element
+void insert(MinHeap* h, int value) {
+    if (h->size >= MAX_SIZE) {
+        printf("Heap is full.\n");
         return;
     }
-    // Add the new element to the end of the array
-    minHeap[heapSize] = value;
-    // Restore heap property by moving the new element up
-    heapifyUp(heapSize);
-    // Increment the heap size
-    heapSize++;
+    h->items[h->size] = value;
+    heapifyUp(h, h->size);
+    h->size++;
 }
 
-// Function to delete the minimum element (which is always at the root) from the min-heap.
-int deleteMinHeap() {
-    // Check if the heap is empty before deleting
-    if (heapSize <= 0) {
-        printf("Heap is empty. Cannot delete.\n");
-        return -1; // Return -1 or throw an error for an empty heap
+// Deletes the minimum element
+int deleteMin(MinHeap* h) {
+    if (h->size <= 0) {
+        printf("Heap is empty.\n");
+        return -1;
     }
-    // Store the minimum value (root) to return later
-    int minVal = minHeap[0];
-    // Replace the root with the last element of the heap
-    minHeap[0] = minHeap[heapSize - 1];
-    // Decrement the heap size
-    heapSize--;
-    // Restore heap property by moving the new root down
-    heapifyDown(0);
-    return minVal; // Return the deleted minimum value
+    int minVal = h->items[0];
+    h->items[0] = h->items[h->size - 1];
+    h->size--;
+    heapifyDown(h, 0);
+    return minVal;
 }
 
-// Function to print all elements currently in the min-heap.
-void printMinHeap() {
+// Prints heap elements
+void printHeap(MinHeap* h) {
     printf("Min-Heap elements: ");
-    for (int i = 0; i < heapSize; i++) {
-        printf("%d ", minHeap[i]);
+    for (int i = 0; i < h->size; i++) {
+        printf("%d ", h->items[i]);
     }
     printf("\n");
 }
 
 int main() {
-    printf("--- Min-Heap Operations ---\n");
-    insertMinHeap(10);
-    insertMinHeap(5);
-    insertMinHeap(15);
-    insertMinHeap(2);
-    insertMinHeap(20);
-    printMinHeap(); // Expected: 2 5 15 10 20 (order might vary beyond heap property)
+    MinHeap myHeap;
+    initializeHeap(&myHeap);
 
-    printf("Deleting min element...\n");
-    printf("Deleted min element: %d\n", deleteMinHeap()); // Should be 2
-    printMinHeap(); // Expected: 5 10 15 20 (order might vary beyond heap property)
+    insert(&myHeap, 10);
+    insert(&myHeap, 5);
+    insert(&myHeap, 15);
+    printHeap(&myHeap);
 
-    insertMinHeap(1);
-    printMinHeap(); // Expected: 1 10 5 20 15 (order might vary beyond heap property)
-
-    printf("Deleting min element...\n");
-    printf("Deleted min element: %d\n", deleteMinHeap()); // Should be 1
-    printMinHeap(); // Expected: 5 10 15 20 (order might vary beyond heap property)
+    printf("Deleted min element: %d\n", deleteMin(&myHeap));
+    printHeap(&myHeap);
 
     return 0;
 }
